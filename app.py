@@ -134,7 +134,7 @@ if gdf is not None:
                      st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
                      
                      # Using a clean list format
-                     st.write("### Energy Performance")
+                     st.write("### Annual Energy Performance")
                      st.write(f"📊 **Total Energy:** `{bldg['Total_Energy_kWh']:.0f} kWh`")
                      st.write(f"❄️ **Cooling:** `{bldg['Cooling_Energy_kWh']:.0f} kWh`")
                      st.write(f"💡 **Lighting:** `{bldg['Lighting_kWh']:.0f} kWh`")
