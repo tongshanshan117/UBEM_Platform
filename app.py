@@ -102,7 +102,7 @@ if gdf is not None:
 
     # --- RIGHT PANEL: Map and Details ---
     with col_right:
-        tab_map, tab_detail = st.tabs(["🗺️ Campus Map", "🔍 Building Detail"])
+        tab_map, tab_detail = st.tabs(["🗺️ Campus Map", "🔍 Building Details"])
         
         with tab_map:
             st.subheader("Building Energy Map")
