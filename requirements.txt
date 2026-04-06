@@ -1,0 +1,4 @@
+streamlitgeopandasleafmapmapclassifyplotly
+pyogriopandaspyarrow
+shapely
+folium
