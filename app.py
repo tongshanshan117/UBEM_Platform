@@ -55,7 +55,7 @@ if gdf is not None:
         key='selected_types'
     )
 
-    display_name = st.sidebar.selectbox("Select Energy Metric", list(METRICS_MAPPING.keys()))
+    display_name = st.sidebar.selectbox("Select Annual Energy Metric", list(METRICS_MAPPING.keys()))
     target_column = METRICS_MAPPING[display_name]
 
     # Apply Filter
