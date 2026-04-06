@@ -32,7 +32,7 @@ def load_data():
 gdf = load_data()
 
 if gdf is not None:
-    st.title("🏙️ BEAM Campus Building Consumption Map")
+    st.title("🏙️ NUS Kent Ridge Campus: Building Energy Dashboard")
 
     # --- SIDEBAR: Archetype Filter ---
     st.sidebar.header("Select Building Archetypes")
