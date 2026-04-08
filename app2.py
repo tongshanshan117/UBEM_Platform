@@ -89,6 +89,7 @@ if gdf is not None:
                 with d1:
                     # st.info(f"**Archetype:** {bldg['Archetype']}")
                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
+                    
                     st.write("### ❄️ Increase Cooling Setpoint")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
@@ -140,7 +141,7 @@ if gdf is not None:
                         st.info("Scenario data file not found.")
 
                 with d2:
-                    st.write("### Energy Breakdown")
+                    st.write("### Current Energy Breakdown")
                     breakdown_data = {
                         "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
                         "Value": [
