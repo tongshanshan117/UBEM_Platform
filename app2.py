@@ -50,13 +50,11 @@ if gdf is not None:
     display_name = st.sidebar.selectbox("Select Annual Energy Metric", list(METRICS_MAPPING.keys()))
     target_column = METRICS_MAPPING[display_name]
 
-    # Apply Filter
     filtered_gdf = gdf[gdf['Archetype'].astype(str).isin(selected_archetypes)]
 
     # --- MAIN LAYOUT ---
     col_left, col_right = st.columns([1, 2])
 
-    # --- LEFT PANEL: Dynamic Ranking ---
     with col_left:
         st.subheader(f"📊 Top 5 buildings: {display_name}")
         if not filtered_gdf.empty:
@@ -68,86 +66,82 @@ if gdf is not None:
             )
             fig_top.update_layout(xaxis={'categoryorder':'total descending'}, showlegend=False, height=350, margin=dict(l=10, r=10, t=30, b=10))
             st.plotly_chart(fig_top, use_container_width=True)
-            
-            st.markdown("**Building Details:**")
-            for i, row in enumerate(top_5.itertuples()):
-                st.write(f"**#{i+1}** {getattr(row, ID_LINK)}")
         else:
-            st.warning("No data found for current filters.")
+            st.warning("No data found.")
 
-    # --- RIGHT PANEL: Map and Details ---
     with col_right:
         tab_map, tab_detail = st.tabs(["🗺️ Campus Map", "🔍 Building Details & Scenarios"])
         
         with tab_map:
-            st.subheader("Building Energy Map")
             if not filtered_gdf.empty:
                 center_y = filtered_gdf.geometry.centroid.y.mean()
                 center_x = filtered_gdf.geometry.centroid.x.mean()
                 m = leafmap.Map(center=[center_y, center_x], zoom=17)
                 m.add_data(filtered_gdf, column=target_column, scheme="Quantiles", cmap="YlOrRd", legend_title="kWh/m²")
                 m.to_streamlit(height=600)
-            else:
-                st.info("Select archetypes to view map.")
 
         with tab_detail:
             if not filtered_gdf.empty:
                 search_id = st.selectbox("Search/Select Building ID", filtered_gdf[ID_LINK].unique())
-                # Fix: Added [0] index to resolve Series-to-float issues in breakdown
                 bldg = filtered_gdf[filtered_gdf[ID_LINK] == search_id].iloc[0]
 
                 d1, d2 = st.columns(2)
                 with d1:
-                    st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
+                    st.info(f"**Archetype:** {bldg['Archetype']}")
                     
-                    # --- UPDATED: STACKED SCENARIO BAR CHART ---
                     st.write("### ❄️ Cooling Setpoint Sensitivity (Scenario)")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
                     if os.path.exists(scenario_csv):
                         df_scen = pd.read_csv(scenario_csv)
+                        df_scen.columns = df_scen.columns.str.strip() # Clean column names
                         
-                        # 1. Define Columns & Order
-                        stack_cols = ["Cooling EUI", "Lighting EUI", "Equipment EUI", "Hot Water EUI"]
+                        # Identify columns for stacking
+                        potential_cols = ["Cooling EUI", "Lighting EUI", "Equipment EUI", "Hot Water EUI"]
+                        available_cols = [c for c in potential_cols if c in df_scen.columns]
+                        
+                        # Set Sequence: Baseline at top
                         scenario_order = ["Baseline", "Scenario A", "Scenario B", "Scenario C"]
                         
-                        # 2. Create Stacked Horizontal Bar
+                        # Create Chart
                         fig_scen = px.bar(
                             df_scen, 
                             y="ScenarioID", 
-                            x=stack_cols,
+                            x=available_cols,
                             orientation='h',
                             category_orders={"ScenarioID": scenario_order},
-                            color_discrete_sequence=px.colors.qualitative.Safe,
-                            labels={"value": "EUI (kWh/m²)", "ScenarioID": "Scenario", "variable": "End Use"}
+                            color_discrete_sequence=px.colors.qualitative.Pastel,
+                            labels={"value": "kWh/m²", "ScenarioID": "Scenario", "variable": "End Use"}
                         )
 
-                        # 3. Add "Reduction" labels from the column
-                        df_scen['Total_Stacked'] = df_scen[stack_cols].sum(axis=1)
+                        # Calculate totals for label positioning
+                        df_scen['Total_Stacked'] = df_scen[available_cols].sum(axis=1)
+                        
+                        # Add the "Reduction" labels on the right
                         for _, row in df_scen.iterrows():
+                            label = f" {row['Reduction']}" if 'Reduction' in df_scen.columns else ""
                             fig_scen.add_annotation(
                                 x=row['Total_Stacked'], 
                                 y=row['ScenarioID'],
-                                text=f"  {row['Reduction']}", # Pulls directly from Reduction column
+                                text=label,
                                 showarrow=False,
                                 xanchor="left",
-                                font=dict(size=12, color="black", family="Arial Black")
+                                font=dict(size=12, color="black")
                             )
 
                         fig_scen.update_layout(
                             height=380, 
-                            margin=dict(l=0, r=80, t=30, b=0), 
+                            margin=dict(l=0, r=100, t=30, b=0), 
                             barmode='stack',
-                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                            xaxis_title="EUI (kWh/m²)"
+                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                         )
                         st.plotly_chart(fig_scen, use_container_width=True)
                     else:
-                        st.info("Scenario data only available for FOE5 archetypes.")
+                        st.info("Scenario data file not found.")
 
                 with d2:
                     st.write("### Energy Breakdown")
-                    breakdown = {
+                    breakdown_data = {
                         "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
                         "Value": [
                             bldg.get('Cooling_Energy_kWh', 0), 
@@ -156,18 +150,13 @@ if gdf is not None:
                             bldg.get('Hot_Water_kWh', 0)
                         ]
                     }
-                    fig_pie = px.pie(breakdown, values='Value', names='Type', hole=0.4, 
-                                     color_discrete_sequence=px.colors.qualitative.Set3)
+                    fig_pie = px.pie(breakdown_data, values='Value', names='Type', hole=0.4)
                     fig_pie.update_layout(height=300, margin=dict(l=0, r=0, b=0, t=30))
                     st.plotly_chart(fig_pie, use_container_width=True)
-            else:
-                st.write("Please select at least one Archetype from the sidebar.")
 
-    # --- RAW DATA TABLE ---
     st.markdown("---")
     with st.expander("📂 View Filtered Attribute Table"):
-        table_df = filtered_gdf.drop(columns='geometry')
-        st.dataframe(table_df, use_container_width=True)
+        st.dataframe(filtered_gdf.drop(columns='geometry'), use_container_width=True)
 
 else:
     st.info("Check 'processed/buildings_final.gpkg'.")
