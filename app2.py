@@ -90,19 +90,52 @@ if gdf is not None:
                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
 
                     st.write("### Baseline Energy Breakdown")
+
+                    # 1. Define your labels and values
+                    labels = ["Cooling", "Lighting", "Equipment", "Hot Water"]
+                    # Assuming these are the EUI values you want to show in the labels
+                    eui_values = [
+                        round(bldg.get('EUI_Cooling_kWh_m2', 0), 1),
+                        round(bldg.get('EUI_Lighting_kWh_m2', 0), 1),
+                        round(bldg.get('EUI_Equipment_kWh_m2', 0), 1),
+                        round(bldg.get('EUI_Hot_Water_kWh_m2', 0), 1)
+                    ]
+                    
                     breakdown_data = {
-                        "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
+                        "Type": labels,
                         "Value": [
                             bldg.get('Cooling_Energy_kWh', 0), 
                             bldg.get('Lighting_kWh', 0), 
                             bldg.get('Equipment_kWh', 0), 
                             bldg.get('Hot_Water_kWh', 0)
-                        ]
+                        ],
+                        "EUI": eui_values
                     }
-                      
-                    fig_pie = px.pie(breakdown_data, values='Value', names='Type', hole=0.4,color_discrete_sequence=px.colors.qualitative.Set3)
-                    fig_pie.update_layout(height=300, margin=dict(l=0, r=0, b=0, t=30))
+                    
+                    fig_pie = px.pie(
+                        breakdown_data, 
+                        values='Value', 
+                        names='Type', 
+                        hole=0.4,
+                        color_discrete_sequence=px.colors.qualitative.Set3,
+                        custom_data=['EUI'] # This passes the EUI values to the chart
+                    )
+                    
+                    # 2. Configure the labels to show: Name, Percentage, and EUI
+                    fig_pie.update_traces(
+                        textposition='outside',
+                        textinfo='percent+label',
+                        hovertemplate="<b>%{label}</b><br>Energy: %{value:.1f} kWh<br>EUI: %{customdata[0]:.1f} kWh/m²"
+                    )
+                    
+                    # Alternative: If you want the EUI to literally appear in the text labels on the chart:
+                    fig_pie.update_traces(
+                        texttemplate="%{label}<br>%{percent}<br>%{customdata[0]:.1f} EUI"
+                    )
+                    
+                    fig_pie.update_layout(height=350, margin=dict(l=0, r=0, b=0, t=30))
                     st.plotly_chart(fig_pie, use_container_width=True)
+
                     
                 with d2:                    
                     st.write("### ❄️ Increase Cooling Setpoint")
