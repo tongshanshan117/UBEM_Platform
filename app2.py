@@ -89,7 +89,7 @@ if gdf is not None:
                 with d1:
                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
 
-                    st.write("### Current Energy Breakdown")
+                    st.write("### Baseline Energy Breakdown")
                     breakdown_data = {
                         "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
                         "Value": [
@@ -99,7 +99,8 @@ if gdf is not None:
                             bldg.get('Hot_Water_kWh', 0)
                         ]
                     }
-                    fig_pie = px.pie(breakdown_data, values='Value', names='Type', hole=0.4)
+                      
+                    fig_pie = px.pie(breakdown_data, values='Value', names='Type', hole=0.4,color_discrete_sequence=px.colors.qualitative.Set3)
                     fig_pie.update_layout(height=300, margin=dict(l=0, r=0, b=0, t=30))
                     st.plotly_chart(fig_pie, use_container_width=True)
                     
