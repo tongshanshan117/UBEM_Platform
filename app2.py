@@ -136,24 +136,23 @@ if gdf is not None:
                     )
                     
                     st.plotly_chart(fig_pie, use_container_width=True)
-
                     
-                with d2:                    
+                                with d2:                    
                     st.write("### ❄️ Increase Cooling Setpoint")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
                     if os.path.exists(scenario_csv):
                         df_scen = pd.read_csv(scenario_csv)
-                        df_scen.columns = df_scen.columns.str.strip() # Clean column names
+                        df_scen.columns = df_scen.columns.str.strip() 
                         
-                        # Identify columns for stacking
                         potential_cols = ["Cooling EUI", "Lighting EUI", "Equipment EUI", "Hot Water EUI"]
                         available_cols = [c for c in potential_cols if c in df_scen.columns]
                         
-                        # Set Sequence: Baseline at top
                         scenario_order = ["Baseline", "Scenario A", "Scenario B", "Scenario C"]
                         
-                        # Create Chart
+                        # Calculate totals and round to 1 digit
+                        df_scen['Total_Stacked'] = df_scen[available_cols].sum(axis=1).round(1)
+                        
                         fig_scen = px.bar(
                             df_scen, 
                             y="ScenarioID", 
@@ -164,32 +163,31 @@ if gdf is not None:
                             labels={"value": "kWh/m²", "ScenarioID": "Scenario", "variable": "End Use"}
                         )
 
-                        # Calculate totals for label positioning
-                        df_scen['Total_Stacked'] = df_scen[available_cols].sum(axis=1)
-                        
-                        # Add the "Reduction" labels on the right
+                        # Add labels BELOW the bars
                         for _, row in df_scen.iterrows():
-                            label = f" {row['Reduction']}" if 'Reduction' in df_scen.columns else ""
+                            # Format: "Total EUI kWh/m² (Reduction %)"
+                            reduction_text = f" ({row['Reduction']})" if 'Reduction' in df_scen.columns else ""
+                            label = f"<b>{row['Total_Stacked']:.1f} kWh/m²</b>{reduction_text}"
+                            
                             fig_scen.add_annotation(
-                                x=row['Total_Stacked'], 
+                                x=row['Total_Stacked'] / 2, # Centered under the bar
                                 y=row['ScenarioID'],
                                 text=label,
                                 showarrow=False,
-                                xanchor="left",
-                                font=dict(size=12, color="black")
+                                yanchor="top",    # Anchors text top to the bar
+                                yshift=-12,       # Shifts text down by 12 pixels
+                                font=dict(size=11, color="#333333")
                             )
 
                         fig_scen.update_layout(
-                            height=380, 
-                            margin=dict(l=0, r=100, t=30, b=0), 
+                            height=420, # Increased height to accommodate labels below bars
+                            margin=dict(l=0, r=20, t=40, b=40), 
                             barmode='stack',
-                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5)
                         )
                         st.plotly_chart(fig_scen, use_container_width=True)
                     else:
                         st.info("Scenario data file not found.")
-
-
     st.markdown("---")
     with st.expander("📂 View Filtered Attribute Table"):
         st.dataframe(filtered_gdf.drop(columns='geometry'), use_container_width=True)
