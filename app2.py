@@ -81,16 +81,19 @@ if gdf is not None:
         
         with tab_map:
             st.subheader("Building Energy Map")
-            center_y = filtered_gdf.geometry.centroid.y.mean() if not filtered_gdf.empty else gdf.geometry.centroid.y.mean()
-            center_x = filtered_gdf.geometry.centroid.x.mean() if not filtered_gdf.empty else gdf.geometry.centroid.x.mean()
-            m = leafmap.Map(center=[center_y, center_x], zoom=17)
             if not filtered_gdf.empty:
+                center_y = filtered_gdf.geometry.centroid.y.mean()
+                center_x = filtered_gdf.geometry.centroid.x.mean()
+                m = leafmap.Map(center=[center_y, center_x], zoom=17)
                 m.add_data(filtered_gdf, column=target_column, scheme="Quantiles", cmap="YlOrRd", legend_title="kWh/m²")
-            m.to_streamlit(height=600)
+                m.to_streamlit(height=600)
+            else:
+                st.info("Select archetypes to view map.")
 
         with tab_detail:
             if not filtered_gdf.empty:
                 search_id = st.selectbox("Search/Select Building ID", filtered_gdf[ID_LINK].unique())
+                # Fix: Added [0] index to resolve Series-to-float issues in breakdown
                 bldg = filtered_gdf[filtered_gdf[ID_LINK] == search_id].iloc[0]
 
                 d1, d2 = st.columns(2)
@@ -104,7 +107,7 @@ if gdf is not None:
                     if os.path.exists(scenario_csv):
                         df_scen = pd.read_csv(scenario_csv)
                         
-                        # 1. Configuration: Categories to stack and Sequence
+                        # 1. Define Columns & Order
                         stack_cols = ["Cooling EUI", "Lighting EUI", "Equipment EUI", "Hot Water EUI"]
                         scenario_order = ["Baseline", "Scenario A", "Scenario B", "Scenario C"]
                         
@@ -115,25 +118,25 @@ if gdf is not None:
                             x=stack_cols,
                             orientation='h',
                             category_orders={"ScenarioID": scenario_order},
-                            color_discrete_sequence=px.colors.qualitative.T10,
+                            color_discrete_sequence=px.colors.qualitative.Safe,
                             labels={"value": "EUI (kWh/m²)", "ScenarioID": "Scenario", "variable": "End Use"}
                         )
 
-                        # 3. Add Reduction labels on the right side of the bars
+                        # 3. Add "Reduction" labels from the column
                         df_scen['Total_Stacked'] = df_scen[stack_cols].sum(axis=1)
                         for _, row in df_scen.iterrows():
                             fig_scen.add_annotation(
                                 x=row['Total_Stacked'], 
                                 y=row['ScenarioID'],
-                                text=f"  {row['Reduction']}",
+                                text=f"  {row['Reduction']}", # Pulls directly from Reduction column
                                 showarrow=False,
                                 xanchor="left",
-                                font=dict(size=11, color="black")
+                                font=dict(size=12, color="black", family="Arial Black")
                             )
 
                         fig_scen.update_layout(
                             height=380, 
-                            margin=dict(l=0, r=60, t=30, b=0), 
+                            margin=dict(l=0, r=80, t=30, b=0), 
                             barmode='stack',
                             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                             xaxis_title="EUI (kWh/m²)"
