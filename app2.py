@@ -127,7 +127,7 @@ if gdf is not None:
                         textposition='outside',
                         domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
                         texttemplate="<b>%{label}</b><br>%{percent}<br>%{customdata:.1f} EUI",
-                        textfont_size=11
+                        textfont_size=11,
                         # This ensures the text isn't cut off by the container
                         insidetextorientation='horizontal' 
                     )
