@@ -89,7 +89,7 @@ if gdf is not None:
                 with d1:
                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
 
-                    st.write("### Baseline Energy Breakdown")
+                    st.write("### Baseline energy breakdown")
 
                     # 1. Define your labels and values
                     labels = ["Cooling", "Lighting", "Equipment", "Hot Water"]
@@ -127,7 +127,7 @@ if gdf is not None:
                         textposition='outside',
                         domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
                         texttemplate="<b>%{label}</b><br>%{percent}<br>EUI: %{customdata:.1f} kWh/m²/yr",
-                        textfont_size=11,
+                        textfont_size=10,
                         # This ensures the text isn't cut off by the container
                         insidetextorientation='horizontal' 
                     )
@@ -140,7 +140,7 @@ if gdf is not None:
                     st.plotly_chart(fig_pie, use_container_width=True)
                     
                 with d2:                    
-                    st.write("### ❄️ Increase Cooling Setpoint")
+                    st.write("### ❄️ Increase cooling setpoint (FOE5)")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
                     if os.path.exists(scenario_csv):
