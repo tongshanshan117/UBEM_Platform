@@ -87,9 +87,23 @@ if gdf is not None:
 
                 d1, d2 = st.columns(2)
                 with d1:
-                    # st.info(f"**Archetype:** {bldg['Archetype']}")
                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
+
+                    st.write("### Current Energy Breakdown")
+                    breakdown_data = {
+                        "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
+                        "Value": [
+                            bldg.get('Cooling_Energy_kWh', 0), 
+                            bldg.get('Lighting_kWh', 0), 
+                            bldg.get('Equipment_kWh', 0), 
+                            bldg.get('Hot_Water_kWh', 0)
+                        ]
+                    }
+                    fig_pie = px.pie(breakdown_data, values='Value', names='Type', hole=0.4)
+                    fig_pie.update_layout(height=300, margin=dict(l=0, r=0, b=0, t=30))
+                    st.plotly_chart(fig_pie, use_container_width=True)
                     
+                with d2:                    
                     st.write("### ❄️ Increase Cooling Setpoint")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
@@ -140,20 +154,6 @@ if gdf is not None:
                     else:
                         st.info("Scenario data file not found.")
 
-                with d2:
-                    st.write("### Current Energy Breakdown")
-                    breakdown_data = {
-                        "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
-                        "Value": [
-                            bldg.get('Cooling_Energy_kWh', 0), 
-                            bldg.get('Lighting_kWh', 0), 
-                            bldg.get('Equipment_kWh', 0), 
-                            bldg.get('Hot_Water_kWh', 0)
-                        ]
-                    }
-                    fig_pie = px.pie(breakdown_data, values='Value', names='Type', hole=0.4)
-                    fig_pie.update_layout(height=300, margin=dict(l=0, r=0, b=0, t=30))
-                    st.plotly_chart(fig_pie, use_container_width=True)
 
     st.markdown("---")
     with st.expander("📂 View Filtered Attribute Table"):
