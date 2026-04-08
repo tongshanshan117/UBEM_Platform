@@ -122,18 +122,20 @@ if gdf is not None:
                     )
                     
                     # 2. Configure the labels to show: Name, Percentage, and EUI
+                    # Force labels outside and add a small 'pull' for visibility
                     fig_pie.update_traces(
                         textposition='outside',
-                        textinfo='percent+label',
-                        hovertemplate="<b>%{label}</b><br>Energy: %{value:.1f} kWh<br>EUI: %{customdata[0]:.1f} kWh/m²"
+                        texttemplate="<b>%{label}</b><br>%{percent}<br>%{customdata:.1f} EUI",
+                        # This ensures the text isn't cut off by the container
+                        insidetextorientation='horizontal' 
                     )
                     
-                    # Alternative: If you want the EUI to literally appear in the text labels on the chart:
-                    #fig_pie.update_traces(
-                    #    texttemplate="%{label}<br>%{percent}<br>%{customdata[0]:.1f} EUI"
-                    #)
+                    fig_pie.update_layout(
+                        height=400, # Increased slightly to give room for outside labels
+                        margin=dict(l=50, r=50, b=0, t=30), # Added side margins so text doesn't hit the edge
+                        showlegend=False # Optional: If labels are outside, you might not need the legend
+                    )
                     
-                    fig_pie.update_layout(height=350, margin=dict(l=0, r=0, b=0, t=30))
                     st.plotly_chart(fig_pie, use_container_width=True)
 
                     
