@@ -33,7 +33,7 @@ def load_data():
 gdf = load_data()
 
 if gdf is not None:
-    st.title("🏙️ NUS Kent Ridge Campus: Building Energy Dashboard")
+    st.title("🏙️ NUS Campus: Building Energy Dashboard")
 
     # --- SIDEBAR: Archetype Filter ---
     st.sidebar.header("Select Building Archetypes")
@@ -133,7 +133,6 @@ if gdf is not None:
                     fig_pie.update_layout(
                         height=400, # Increased slightly to give room for outside labels
                         margin=dict(l=50, r=50, b=0, t=30), # Added side margins so text doesn't hit the edge
-                        showlegend=False # Optional: If labels are outside, you might not need the legend
                     )
                     
                     st.plotly_chart(fig_pie, use_container_width=True)
