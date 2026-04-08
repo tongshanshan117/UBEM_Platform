@@ -2,6 +2,7 @@ import streamlit as st
 import geopandas as gpd
 import leafmap.foliumap as leafmap
 import plotly.express as px
+import pandas as pd
 import os
 
 # 1. Page Configuration
@@ -32,11 +33,10 @@ def load_data():
 gdf = load_data()
 
 if gdf is not None:
-    st.title("🏙️ NUS Kent Ridge Campus: Building Energy Dashboard")
+    st.title("🏙️ NUS Campus: Building Energy Dashboard")
 
     # --- SIDEBAR: Archetype Filter ---
     st.sidebar.header("Select Building Archetypes")
-    
     raw_types = gdf['Archetype'].unique()
     unique_archetypes = sorted([str(t) for t in raw_types if t is not None and str(t).lower() != 'nan'])
     
@@ -44,132 +44,155 @@ if gdf is not None:
         st.session_state.selected_types = unique_archetypes
 
     if st.sidebar.button("Select/Deselect All"):
-        if len(st.session_state.selected_types) > 0:
-            st.session_state.selected_types = []
-        else:
-            st.session_state.selected_types = unique_archetypes
+        st.session_state.selected_types = [] if len(st.session_state.selected_types) > 0 else unique_archetypes
 
-    selected_archetypes = st.sidebar.multiselect(
-        "Filter by Archetype",
-        options=unique_archetypes,
-        key='selected_types'
-    )
-
+    selected_archetypes = st.sidebar.multiselect("Filter by Archetype", options=unique_archetypes, key='selected_types')
     display_name = st.sidebar.selectbox("Select Annual Energy Metric", list(METRICS_MAPPING.keys()))
     target_column = METRICS_MAPPING[display_name]
 
-    # Apply Filter
     filtered_gdf = gdf[gdf['Archetype'].astype(str).isin(selected_archetypes)]
 
     # --- MAIN LAYOUT ---
-    col_left, col_right = st.columns([1, 2]) # Adjusted ratio for better look
+    col_left, col_right = st.columns([1, 2])
 
-        # --- LEFT PANEL: Dynamic Ranking (Top 5 Left-to-Right) ---
     with col_left:
         st.subheader(f"📊 Top 5 buildings: {display_name}")
         if not filtered_gdf.empty:
-            # 1. Get Top 5 sorted by value
             top_5 = filtered_gdf.nlargest(5, target_column)[[ID_LINK, 'Name_2', target_column]]
-            
-            # 2. Vertical Bar Chart (Left-to-Right)
             fig_top = px.bar(
-                top_5, 
-                x=ID_LINK,            # Show ID on the X-axis for brevity
-                y=target_column,      
-                hover_data=['Name_2'], # Show Name_2 when hovering over bars
-                color=target_column,
-                color_continuous_scale="Reds",
-                text_auto='.1f',      
+                top_5, x=ID_LINK, y=target_column, hover_data=['Name_2'], 
+                color=target_column, color_continuous_scale="Reds", text_auto='.1f',
                 labels={target_column: "kWh/m²", ID_LINK: "Building ID"}
             )
-            
-            fig_top.update_layout(
-                xaxis={'categoryorder':'total descending'}, 
-                showlegend=False, 
-                height=350,
-                margin=dict(l=10, r=10, t=30, b=10)
-            )
+            fig_top.update_layout(xaxis={'categoryorder':'total descending'}, showlegend=False, height=350, margin=dict(l=10, r=10, t=30, b=10))
             st.plotly_chart(fig_top, use_container_width=True)
-            
-            # 3. Leaderboard List: ID with Name_2 as description
-            st.markdown("**Building Details:**")
-            for i, row in enumerate(top_5.itertuples()):
-                # Format: #1 ID (Name_2): Value
-                st.write(f"**#{i+1}** {getattr(row, ID_LINK)}")
         else:
-            st.warning("No data found for current filters.")
+            st.warning("No data found.")
 
-
-    # --- RIGHT PANEL: Map and Details ---
     with col_right:
-        tab_map, tab_detail = st.tabs(["🗺️ Campus Map", "🔍 Building Details"])
+        tab_map, tab_detail = st.tabs(["🗺️ Campus Map", "🔍 Building Details & Scenarios"])
         
         with tab_map:
-            st.subheader("Building Energy Map")
-            center_y = filtered_gdf.geometry.centroid.y.mean() if not filtered_gdf.empty else gdf.geometry.centroid.y.mean()
-            center_x = filtered_gdf.geometry.centroid.x.mean() if not filtered_gdf.empty else gdf.geometry.centroid.x.mean()
-            
-            m = leafmap.Map(center=[center_y, center_x], zoom=17)
-            
             if not filtered_gdf.empty:
-                m.add_data(
-                    filtered_gdf,
-                    column=target_column,
-                    scheme="Quantiles",
-                    cmap="YlOrRd",
-                    legend_title="kWh/m²"
-                )
-               
-            m.to_streamlit(height=600)
+                center_y = filtered_gdf.geometry.centroid.y.mean()
+                center_x = filtered_gdf.geometry.centroid.x.mean()
+                m = leafmap.Map(center=[center_y, center_x], zoom=17)
+                m.add_data(filtered_gdf, column=target_column, scheme="Quantiles", cmap="YlOrRd", legend_title="kWh/m²")
+                m.to_streamlit(height=600)
 
         with tab_detail:
             if not filtered_gdf.empty:
                 search_id = st.selectbox("Search/Select Building ID", filtered_gdf[ID_LINK].unique())
-                
-                # FIX: Added .iloc[0] to correctly select the single row
                 bldg = filtered_gdf[filtered_gdf[ID_LINK] == search_id].iloc[0]
 
                 d1, d2 = st.columns(2)
                 with d1:
-                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
-                     
-                     # Using a clean list format
-                     st.write("### Annual Energy Performance")
-                     st.write(f"📊 **Total Energy:** `{bldg['Total_Energy_kWh']:.0f} kWh`")
-                     st.write(f"❄️ **Cooling:** `{bldg['Cooling_Energy_kWh']:.0f} kWh`")
-                     st.write(f"💡 **Lighting:** `{bldg['Lighting_kWh']:.0f} kWh`")
-                     st.write(f"🔌 **Equipment:** `{bldg['Equipment_kWh']:.0f} kWh`")
-                     st.write(f"🔥 **Hot Water:** `{bldg['Hot_Water_kWh']:.0f} kWh`")
-                     st.markdown("---")
-                     st.write(f"🏠 **Gross EUI:** {bldg['EUI_Gross_kWh_m2']:.0f} kWh/m²`")
-                     st.write(f"❄️ **Cooling EUI:** `{bldg['EUI_Cooling_kWh_m2']:.0f} kWh/m²`")
-                     st.write(f"💡 **Lighting EUI:** `{bldg['EUI_Lighting_kWh_m2']:.0f} kWh/m²`")
-                     st.write(f"🔌 **Equipment EUI:** `{bldg['EUI_Equipment_kWh_m2']:.0f} kWh/m²`")
-                     st.write(f"🔥 **Hot Water EUI:** `{bldg['EUI_Hot_Water_kWh_m2']:.0f} kWh/m²`")
+                    st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
 
-                with d2:
-                    breakdown = {
-                        "Type": ["Cooling", "Lighting", "Equipment", "Hot Water"],
+                    st.write("### Baseline Energy Breakdown")
+
+                    # 1. Define your labels and values
+                    labels = ["Cooling", "Lighting", "Equipment", "Hot Water"]
+                    # Assuming these are the EUI values you want to show in the labels
+                    eui_values = [
+                        round(bldg.get('EUI_Cooling_kWh_m2', 0), 1),
+                        round(bldg.get('EUI_Lighting_kWh_m2', 0), 1),
+                        round(bldg.get('EUI_Equipment_kWh_m2', 0), 1),
+                        round(bldg.get('EUI_Hot_Water_kWh_m2', 0), 1)
+                    ]
+                    
+                    breakdown_data = {
+                        "Type": labels,
                         "Value": [
                             bldg.get('Cooling_Energy_kWh', 0), 
                             bldg.get('Lighting_kWh', 0), 
                             bldg.get('Equipment_kWh', 0), 
                             bldg.get('Hot_Water_kWh', 0)
-                        ]
+                        ],
+                        "EUI": eui_values
                     }
-                    fig_pie = px.pie(breakdown, values='Value', names='Type', hole=0.4, 
-                                     color_discrete_sequence=px.colors.qualitative.Set3)
-                    fig_pie.update_layout(height=300, margin=dict(l=0, r=0, b=0, t=30))
+                    
+                    fig_pie = px.pie(
+                        breakdown_data, 
+                        values='Value', 
+                        names='Type', 
+                        hole=0.4,
+                        color_discrete_sequence=px.colors.qualitative.Set3,
+                        custom_data=['EUI'] # This passes the EUI values to the chart
+                    )
+                    
+                    # 2. Configure the labels to show: Name, Percentage, and EUI
+                    # Force labels outside and add a small 'pull' for visibility
+                    fig_pie.update_traces(
+                        textposition='outside',
+                        domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
+                        texttemplate="<b>%{label}</b><br>%{percent}<br>%{customdata:.1f} EUI",
+                        textfont_size=11,
+                        # This ensures the text isn't cut off by the container
+                        insidetextorientation='horizontal' 
+                    )
+                    
+                    fig_pie.update_layout(
+                        height=380, # Increased slightly to give room for outside labels
+                        margin=dict(l=10, r=10, b=10, t=10), # Added side margins so text doesn't hit the edge
+                    )
+                    
                     st.plotly_chart(fig_pie, use_container_width=True)
-            else:
-                st.write("Please select at least one Archetype from the sidebar.")
+                    
+                with d2:                    
+                    st.write("### ❄️ Increase Cooling Setpoint")
+                    scenario_csv = "FOE5_scenario_setpoints.csv"
+                    
+                    if os.path.exists(scenario_csv):
+                        df_scen = pd.read_csv(scenario_csv)
+                        df_scen.columns = df_scen.columns.str.strip() 
+                        
+                        potential_cols = ["Cooling EUI", "Lighting EUI", "Equipment EUI", "Hot Water EUI"]
+                        available_cols = [c for c in potential_cols if c in df_scen.columns]
+                        
+                        scenario_order = ["Baseline", "Scenario A", "Scenario B", "Scenario C"]
+                        
+                        # Calculate totals and round to 1 digit
+                        df_scen['Total_Stacked'] = df_scen[available_cols].sum(axis=1).round(1)
+                        
+                        fig_scen = px.bar(
+                            df_scen, 
+                            y="ScenarioID", 
+                            x=available_cols,
+                            orientation='h',
+                            category_orders={"ScenarioID": scenario_order},
+                            color_discrete_sequence=px.colors.qualitative.Pastel,
+                            labels={"value": "kWh/m²", "ScenarioID": "Scenario", "variable": "End Use"}
+                        )
 
-    # --- RAW DATA TABLE ---
+                        # Add labels BELOW the bars
+                        for _, row in df_scen.iterrows():
+                            # Format: "Total EUI kWh/m² (Reduction %)"
+                            reduction_text = f" ({row['Reduction']})" if 'Reduction' in df_scen.columns else ""
+                            label = f"<b>{row['Total_Stacked']:.1f} kWh/m²</b>{reduction_text}"
+                            
+                            fig_scen.add_annotation(
+                                x=row['Total_Stacked'] / 2, # Centered under the bar
+                                y=row['ScenarioID'],
+                                text=label,
+                                showarrow=False,
+                                yanchor="top",    # Anchors text top to the bar
+                                yshift=-12,       # Shifts text down by 12 pixels
+                                font=dict(size=11, color="#333333")
+                            )
+
+                        fig_scen.update_layout(
+                            height=420, # Increased height to accommodate labels below bars
+                            margin=dict(l=0, r=20, t=40, b=40), 
+                            barmode='stack',
+                            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5)
+                        )
+                        st.plotly_chart(fig_scen, use_container_width=True)
+                    else:
+                        st.info("Scenario data file not found.")
     st.markdown("---")
     with st.expander("📂 View Filtered Attribute Table"):
-        # Dropping geometry column for display to avoid errors
-        table_df = filtered_gdf.drop(columns='geometry')
-        st.dataframe(table_df, use_container_width=True)
+        st.dataframe(filtered_gdf.drop(columns='geometry'), use_container_width=True)
 
 else:
-    st.info("Check 'processed/buildings_final.gpkg'. Run 'scripts/data_merge.py' if missing.")
+    st.info("Check 'processed/buildings_final.gpkg'.")
