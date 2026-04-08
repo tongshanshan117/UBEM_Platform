@@ -126,7 +126,7 @@ if gdf is not None:
                     fig_pie.update_traces(
                         textposition='outside',
                         domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
-                        texttemplate="<b>%{label}</b><br>%{percent}<br>EUI: %{customdata:.1f} kWh/m²/yr"
+                        texttemplate="<b>%{label}</b><br>%{percent}<br>EUI: %{customdata:.1f} kWh/m²/yr",
                         textfont_size=11,
                         # This ensures the text isn't cut off by the container
                         insidetextorientation='horizontal' 
