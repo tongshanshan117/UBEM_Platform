@@ -87,8 +87,8 @@ if gdf is not None:
 
                 d1, d2 = st.columns(2)
                 with d1:
-                    st.info(f"**Archetype:** {bldg['Archetype']}")
-                    
+                    # st.info(f"**Archetype:** {bldg['Archetype']}")
+                    st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
                     st.write("### ❄️ Increase Cooling Setpoint")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
