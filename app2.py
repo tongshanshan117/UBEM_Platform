@@ -125,14 +125,16 @@ if gdf is not None:
                     # Force labels outside and add a small 'pull' for visibility
                     fig_pie.update_traces(
                         textposition='outside',
+                        domain={'x': [0.2, 0.8], 'y': [0.2, 0.8]}, 
                         texttemplate="<b>%{label}</b><br>%{percent}<br>%{customdata:.1f} EUI",
+                        textfont_size=11
                         # This ensures the text isn't cut off by the container
                         insidetextorientation='horizontal' 
                     )
                     
                     fig_pie.update_layout(
-                        height=400, # Increased slightly to give room for outside labels
-                        margin=dict(l=50, r=50, b=0, t=30), # Added side margins so text doesn't hit the edge
+                        height=350, # Increased slightly to give room for outside labels
+                        margin=dict(l=20, r=20, b=20, t=30), # Added side margins so text doesn't hit the edge
                     )
                     
                     st.plotly_chart(fig_pie, use_container_width=True)
