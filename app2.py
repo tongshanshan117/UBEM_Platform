@@ -89,7 +89,7 @@ if gdf is not None:
                 with d1:
                     st.info(f"**Archetype:** {bldg['Archetype']}")
                     
-                    st.write("### ❄️ Cooling Setpoint Sensitivity (Scenario)")
+                    st.write("### ❄️ Increase Cooling Setpoint")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
                     if os.path.exists(scenario_csv):
