@@ -137,7 +137,7 @@ if gdf is not None:
                     
                     st.plotly_chart(fig_pie, use_container_width=True)
                     
-                                with d2:                    
+                with d2:                    
                     st.write("### ❄️ Increase Cooling Setpoint")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
