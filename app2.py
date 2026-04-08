@@ -97,25 +97,47 @@ if gdf is not None:
                 with d1:
                     st.info(f"**Description:** {bldg['Name_2']}\n\n**Archetype:** {bldg['Archetype']}")
                     
-                    # --- UPDATED: STATIC SCENARIO BAR CHART ---
+                    # --- UPDATED: STACKED SCENARIO BAR CHART ---
                     st.write("### ❄️ Cooling Setpoint Sensitivity (Scenario)")
                     scenario_csv = "FOE5_scenario_setpoints.csv"
                     
                     if os.path.exists(scenario_csv):
                         df_scen = pd.read_csv(scenario_csv)
                         
-                        # Creating horizontal bar chart with revised column names
+                        # 1. Configuration: Categories to stack and Sequence
+                        stack_cols = ["Cooling EUI", "Lighting EUI", "Equipment EUI", "Hot Water EUI"]
+                        scenario_order = ["Baseline", "Scenario A", "Scenario B", "Scenario C"]
+                        
+                        # 2. Create Stacked Horizontal Bar
                         fig_scen = px.bar(
                             df_scen, 
-                            x="Cooling EUI", 
                             y="ScenarioID", 
+                            x=stack_cols,
                             orientation='h',
-                            text="Reduction", 
-                            color="Cooling EUI",
-                            color_continuous_scale="Blues_r",
-                            labels={"Cooling EUI": "Cooling EUI (kWh/m²)", "ScenarioID": "Scenario"}
+                            category_orders={"ScenarioID": scenario_order},
+                            color_discrete_sequence=px.colors.qualitative.T10,
+                            labels={"value": "EUI (kWh/m²)", "ScenarioID": "Scenario", "variable": "End Use"}
                         )
-                        fig_scen.update_layout(height=350, margin=dict(l=0, r=10, t=20, b=0), showlegend=False)
+
+                        # 3. Add Reduction labels on the right side of the bars
+                        df_scen['Total_Stacked'] = df_scen[stack_cols].sum(axis=1)
+                        for _, row in df_scen.iterrows():
+                            fig_scen.add_annotation(
+                                x=row['Total_Stacked'], 
+                                y=row['ScenarioID'],
+                                text=f"  {row['Reduction']}",
+                                showarrow=False,
+                                xanchor="left",
+                                font=dict(size=11, color="black")
+                            )
+
+                        fig_scen.update_layout(
+                            height=380, 
+                            margin=dict(l=0, r=60, t=30, b=0), 
+                            barmode='stack',
+                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                            xaxis_title="EUI (kWh/m²)"
+                        )
                         st.plotly_chart(fig_scen, use_container_width=True)
                     else:
                         st.info("Scenario data only available for FOE5 archetypes.")
