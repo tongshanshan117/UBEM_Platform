@@ -130,8 +130,8 @@ if gdf is not None:
                     
                     # Alternative: If you want the EUI to literally appear in the text labels on the chart:
                     #fig_pie.update_traces(
-                        texttemplate="%{label}<br>%{percent}<br>%{customdata[0]:.1f} EUI"
-                    )
+                    #    texttemplate="%{label}<br>%{percent}<br>%{customdata[0]:.1f} EUI"
+                    #)
                     
                     fig_pie.update_layout(height=350, margin=dict(l=0, r=0, b=0, t=30))
                     st.plotly_chart(fig_pie, use_container_width=True)
